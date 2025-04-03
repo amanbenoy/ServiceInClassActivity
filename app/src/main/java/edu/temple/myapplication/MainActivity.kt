@@ -5,8 +5,11 @@ import android.content.Intent
 import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.widget.Button
+import android.widget.TextView
 import java.util.Timer
 
 class MainActivity : AppCompatActivity() {
@@ -14,9 +17,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timerBinder: TimerService.TimerBinder
     var isConnected = false
 
+    val timerHandler = Handler(Looper.getMainLooper()){
+        findViewById<TextView>(R.id.textView).text = it.what.toString()
+        true
+    }
+
     val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             timerBinder = service as TimerService.TimerBinder
+            timerBinder.setHandler(timerHandler)
             isConnected = true
         }
 
@@ -37,18 +46,17 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.startButton).setOnClickListener {
                 if (isConnected) {
-                    if (timerBinder.paused) {
+                    if (!timerBinder.isRunning) {
                         timerBinder.start(100)
                     }
-                    else
+                    else if (!timerBinder.paused)
                         timerBinder.pause()
                 }
             }
 
 
         findViewById<Button>(R.id.stopButton).setOnClickListener {
-            unbindService(serviceConnection)
-            super.onDestroy()
+            timerBinder.stop()
         }
     }
 }
